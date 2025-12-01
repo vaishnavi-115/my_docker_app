@@ -19,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ Verify files (optional but helpful for debugging)
+      # 2️⃣ Verify files (optional)
       - name: List repo files
         run: ls -R
 
@@ -38,7 +38,7 @@ jobs:
         run: |
           IMAGE=vaishnaviacr.azurecr.io/myfirstcontainerapp:${{ github.sha }}
           echo "Building image $IMAGE"
-          docker build -t $IMAGE ./my_docker_app    # <-- point to your folder
+          docker build -t $IMAGE .           # <-- changed to root directory
           docker push $IMAGE
           echo "IMAGE_NAME=$IMAGE" >> $GITHUB_ENV
 
