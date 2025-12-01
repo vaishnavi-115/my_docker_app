@@ -17,6 +17,7 @@ jobs:
       CONTAINER_APP_NAME: myfirstcontainerapp
       RESOURCE_GROUP_NAME: awesome_azure_ninja
       ACR_NAME: vaishnaviacr # Assuming your ACR name is vaishnaviacr
+      ACR_LOGIN_SERVER: vaishnaviacr.azurecr.io # Define the login server once
 
     steps:
       # 1️⃣ Checkout the repo
@@ -33,25 +34,35 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS_JSON }}
           
-      # 4️⃣ Login to Azure Container Registry
-      - name: Login to ACR
+      # 4️⃣ Login to Azure Container Registry (for PUSH by GitHub Runner)
+      - name: Login to ACR (Runner)
         run: az acr login --name ${{ env.ACR_NAME }}
         
       # 5️⃣ Build and Push Docker Image
       - name: Build and Push Docker Image
-        # Define the full image tag using the ACR name and GitHub SHA for unique tagging
         run: |
-          IMAGE=${{ env.ACR_NAME }}.azurecr.io/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
+          IMAGE=${{ env.ACR_LOGIN_SERVER }}/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
           echo "Building image $IMAGE"
           # Ensure 'dockerfile' is lower-case if that is the file name
           docker build -f dockerfile -t $IMAGE .
           docker push $IMAGE
           echo "IMAGE_NAME=$IMAGE" >> $GITHUB_ENV
           
-      # 6️⃣ Deploy to Azure Container App (CORRECTED STEP)
-      # NOTE: Ingress settings (external, target-port 8000) should ONLY be set 
-      # once via 'az containerapp ingress enable' or during 'create'.
-      # For updates, we only specify the new image.
+      # 6️⃣ Configure ACA to pull from ACR (Fixing UNAUTHORIZED error)
+      - name: Set ACR credentials on Container App
+        run: |
+          # This step provides the Container App (ACA) with the credentials 
+          # needed to pull the image from the Azure Container Registry (ACR).
+          # NOTE: You must create ACR_USERNAME and ACR_PASSWORD secrets in GitHub.
+          az containerapp registry set \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --server ${{ env.ACR_LOGIN_SERVER }} \
+            --username ${{ secrets.ACR_USERNAME }} \
+            --password ${{ secrets.ACR_PASSWORD }}
+
+      # 7️⃣ Deploy to Azure Container App (Update Revision)
+      # NOTE: Ingress settings (external, target-port 8000) should ONLY be set once.
       - name: Deploy new image to Azure Container App
         run: |
           az containerapp update \
