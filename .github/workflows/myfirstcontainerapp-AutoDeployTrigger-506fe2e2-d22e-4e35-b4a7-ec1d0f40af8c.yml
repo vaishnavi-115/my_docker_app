@@ -38,7 +38,7 @@ jobs:
         run: |
           IMAGE=vaishnaviacr.azurecr.io/myfirstcontainerapp:${{ github.sha }}
           echo "Building image $IMAGE"
-          docker build -t $IMAGE .           # <-- changed to root directory
+          docker build -f dockerfile -t $IMAGE .   # <-- specify lowercase dockerfile
           docker push $IMAGE
           echo "IMAGE_NAME=$IMAGE" >> $GITHUB_ENV
 
