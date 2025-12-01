@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Container Apps
+name: Build and Deploy to Azure Container App
 
 on:
   push:
@@ -11,19 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write
-      contents: read
+      id-token: write       # Required for OIDC login
+      contents: read       # Required to checkout repo
 
     steps:
-      # 1️⃣ Checkout full repo
+      # 1️⃣ Checkout the repo
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ List files to confirm build context
+      # 2️⃣ Verify files (optional but helpful for debugging)
       - name: List repo files
         run: ls -R
 
-      # 3️⃣ Login to Azure using secret
+      # 3️⃣ Login to Azure using service principal
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -38,8 +38,7 @@ jobs:
         run: |
           IMAGE=vaishnaviacr.azurecr.io/myfirstcontainerapp:${{ github.sha }}
           echo "Building image $IMAGE"
-          # Change ./my_docker_app if your Dockerfile is in a subfolder
-          docker build -t $IMAGE ./my_docker_app
+          docker build -t $IMAGE ./my_docker_app    # <-- point to your folder
           docker push $IMAGE
           echo "IMAGE_NAME=$IMAGE" >> $GITHUB_ENV
 
